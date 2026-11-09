@@ -1,0 +1,673 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="author" content="Dominik Li-u-fa, Monika Li-u-fa">
+<!-- Kalkulator druku 3D, wersja 1.0, listopad 2026. © 2026 Dominik Li-u-fa, Monika Li-u-fa. Wszelkie prawa zastrzeżone. -->
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Kalkulator druku 3D</title>
+<style>
+:root{--bg:#f4f5f7;--card:#fff;--tx:#1b1d21;--mut:#6b7280;--ac:#2563eb;--acx:#fff;--bd:#e2e5ea;--ok:#16a34a;--bad:#dc2626;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#111317;--card:#1c1f26;--tx:#eceef2;--mut:#98a0ae;--ac:#5b8cff;--acx:#0b1020;--bd:#2c303a;--ok:#4ade80;--bad:#f87171}}
+:root[data-theme="dark"]{--bg:#111317;--card:#1c1f26;--tx:#eceef2;--mut:#98a0ae;--ac:#5b8cff;--acx:#0b1020;--bd:#2c303a;--ok:#4ade80;--bad:#f87171}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--tx);font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;font-size:16px}
+main{max-width:520px;margin:0 auto;padding:14px 14px 90px}
+h1{font-size:20px;margin:6px 0 14px}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:14px;padding:14px;margin-bottom:12px}
+label{display:block;font-size:13px;color:var(--mut);margin:10px 0 4px}
+input,select{width:100%;padding:11px 12px;border-radius:10px;border:1px solid var(--bd);background:var(--bg);color:var(--tx);font-size:16px}
+.row{display:flex;gap:10px}.row>*{flex:1}
+button{border:0;border-radius:10px;padding:12px 14px;font-size:16px;font-weight:600;background:var(--ac);color:var(--acx);width:100%;margin-top:12px}
+button.sec{background:transparent;color:var(--bad);border:1px solid var(--bd);width:auto;margin:0;padding:7px 10px;font-size:14px}
+.total{font-size:34px;font-weight:700;text-align:center;margin:6px 0}
+.line{display:flex;justify-content:space-between;padding:5px 0;color:var(--mut);font-size:15px}
+.line b{color:var(--tx);font-weight:600}
+nav{position:fixed;left:0;right:0;bottom:0;display:flex;overflow-x:auto;background:var(--card);border-top:1px solid var(--bd);padding-bottom:env(safe-area-inset-bottom,0px)}
+nav button{margin:0;border-radius:0;background:transparent;color:var(--mut);padding:14px 13px;font-size:13px;flex:0 0 auto;width:auto;white-space:nowrap}
+nav button.on{color:var(--ac)}
+.dot{display:inline-block;width:24px;height:24px;border-radius:5px;vertical-align:middle;margin-right:8px;border:1px solid var(--bd)}
+.bar{height:6px;border-radius:3px;background:var(--bd);margin:8px 0 2px;overflow:hidden}.bar i{display:block;height:100%;background:var(--ok)}
+.hd{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.hd strong{font-size:16px}.mut{color:var(--mut);font-size:13px}
+.warn{color:var(--bad);font-size:14px;margin-top:8px}
+.hide{display:none!important}
+#login{position:fixed;inset:0;z-index:200;background:var(--bg);display:flex;align-items:center;justify-content:center;padding:20px}
+input[type=color]{padding:2px;height:44px}
+</style>
+</head>
+<body>
+<div id="login">
+<div class="card" style="max-width:360px;width:100%;margin:0">
+<div style="font-size:22px;font-weight:800;text-align:center;margin-bottom:12px">Kalkulator druku 3D</div>
+<form id="lf" autocomplete="on">
+<label>E-mail</label><input id="l-mail" type="email" autocomplete="username" required>
+<label>Hasło</label><input id="l-pass" type="password" autocomplete="current-password" required>
+<button id="l-btn" type="submit">Zaloguj</button>
+</form>
+<div id="lm" class="hide"><p id="lmsg" style="text-align:center"></p><button id="l-out" type="button" class="sec" style="display:block;margin:8px auto 0">Wyloguj</button></div>
+<div class="warn" id="l-err" style="text-align:center"></div>
+</div>
+</div>
+<main>
+<section id="t-calc">
+<h1>KALKULATOR WYDRUKU</h1>
+<div class="card">
+<label>Nazwa wydruku</label><input id="c-name" placeholder="np. figurka">
+<label>Link do wydruku</label><input id="c-link" type="url" inputmode="url" placeholder="https://">
+<label>Nick zamawiającego</label><input id="c-nick" placeholder="np. jan_kowalski">
+<label>Źródło zamawiania</label><select id="c-src"><option value="">Wybierz źródło</option><option>Vinted</option><option>OLX</option><option>Inne</option></select>
+<label>Filament</label><select id="c-fil"></select>
+<div class="row">
+<div><label>Waga (g)</label><input id="c-w" type="number" inputmode="decimal" min="0" placeholder="0"></div>
+<div><label>Godziny</label><input id="c-h" type="number" inputmode="numeric" min="0" placeholder="0"></div>
+<div><label>Minuty</label><input id="c-m" type="number" inputmode="numeric" min="0" max="59" placeholder="0"></div>
+</div>
+<div id="c-extra"></div>
+<button id="c-addcol" class="sec" style="color:var(--ac);margin-top:12px">+ Dodaj kolor</button>
+</div>
+<div class="card">
+<div class="mut" style="text-align:center">Cena końcowa (możesz wpisać własną)</div>
+<div style="display:flex;align-items:center;justify-content:center;gap:8px;margin:6px 0"><input id="r-price" type="number" inputmode="decimal" step="0.01" min="0" style="font-size:32px;font-weight:700;text-align:center;width:65%;padding:6px"><span style="font-size:26px;font-weight:700">zł</span></div>
+<div class="mut hide" id="r-auto" style="text-align:center;margin-bottom:6px">Cena wyliczona: <b id="r-autov">0,00 zł</b> <button id="r-reset" class="sec" style="color:var(--ac);margin-left:6px">Przywróć</button></div>
+<div class="warn" id="r-hint" style="text-align:center;margin:0 0 8px">Uzupełnij filament, wagę, godziny i minuty, żeby zobaczyć cenę.</div>
+<div class="line"><span>Filament</span><b id="r-fil">0,00 zł</b></div>
+<div class="line"><span id="r-resl">Rezerwa na nieudane wydruki i odpad (15%)</span><b id="r-res">0,00 zł</b></div>
+<div class="line"><span>Zużycie prądu</span><b id="r-pow">0,00 zł</b></div>
+<div class="line"><span>Praca (za czas druku)</span><b id="r-work">0,00 zł</b></div>
+<div class="line"><span>Suma kosztów</span><b id="r-sub" style="font-weight:800;font-size:18px">0,00 zł</b></div>
+<div class="line" style="color:var(--bad)"><span id="r-mkl">Narzut / Twój zarobek (100%)</span><b id="r-mk" style="color:var(--bad)">0,00 zł</b></div>
+<div class="line hide" id="r-rdl"><span>Zaokrąglenie ceny</span><b id="r-rd">0,00 zł</b></div>
+<div class="warn hide" id="r-warn"></div>
+<button id="c-save">Zapisz wydruk i odejmij filament</button>
+</div>
+</section>
+
+<section id="t-fil" class="hide">
+<h1>ZAŁOŻONE (AMS I DRUKARKA)</h1>
+<div class="card">
+<div class="hd"><strong>Dodaj szpulę</strong></div>
+<div class="row"><div><label>Nazwa</label><input id="f-name" placeholder="np. PLA CZARNY" autocapitalize="characters" style="text-transform:uppercase"></div><div style="flex:0 0 96px"><label>Kolor</label><input id="f-col" type="color" value="#222222"><button type="button" id="f-rb" class="sec" style="margin-top:6px;width:100%;color:var(--tx)">Tęcza</button></div></div>
+<div class="row">
+<div><label>Cena szpuli (zł)</label><input id="f-price" type="number" inputmode="decimal" placeholder="80"></div>
+<div><label>Waga (g)</label><input id="f-wt" type="number" inputmode="decimal" placeholder="1000"></div>
+</div>
+<button id="f-add">Dodaj</button>
+</div>
+<div id="f-list"></div>
+</section>
+
+<section id="t-mag" class="hide">
+<h1>MAGAZYN</h1>
+<div class="card"><strong>Dodaj nową szpulę</strong>
+<div class="row"><div><label>Nazwa</label><input id="m-name" placeholder="Podaj kolor" autocapitalize="characters" style="text-transform:uppercase"></div><div style="flex:0 0 96px"><label>Kolor</label><input id="m-col" type="color" value="#222222"><button type="button" id="m-rb" class="sec" style="margin-top:6px;width:100%;color:var(--tx)">Tęcza</button></div></div>
+<div class="row"><div><label>Cena szpuli (zł)</label><input id="m-price" type="number" inputmode="decimal" placeholder="80"></div><div><label>Waga szpuli (g)</label><input id="m-wt" type="number" inputmode="decimal" placeholder="1000"></div></div>
+<label>Kategoria</label><select id="m-cat"><option value="">Wybierz kategorię</option><option>PLA</option><option>PETG</option><option>TPU</option></select>
+
+<p class="mut">Jeśli filament o takiej nazwie już jest w magazynie, gramy dołożą się do niego, a cena szpuli zmieni się na nową.</p>
+<button id="m-add">Dodaj do magazynu</button></div>
+<h1 style="font-size:22px;font-weight:800;margin-top:18px">PLA</h1><div id="m-PLA"></div>
+<h1 style="font-size:22px;font-weight:800;margin-top:18px">PETG</h1><div id="m-PETG"></div>
+<h1 style="font-size:22px;font-weight:800;margin-top:18px">TPU</h1><div id="m-TPU"></div>
+</section>
+
+<section id="t-ord" class="hide">
+<h1>BIEŻĄCE ZAMÓWIENIA</h1>
+<div class="card">
+<label>Nazwa wydruku</label><input id="o-name" placeholder="np. figurka">
+<label>Link do wydruku (opcjonalnie)</label><input id="o-link" type="url" inputmode="url" placeholder="https://">
+<label>Nick zamawiającego</label><input id="o-nick" placeholder="np. jan_kowalski">
+<button id="o-add">Dodaj zamówienie</button>
+</div>
+<div id="o-list"></div>
+</section>
+
+<section id="t-abt" class="hide">
+<h1>O APLIKACJI</h1>
+<div class="card" id="ab-card"></div>
+</section>
+
+<section id="t-arc" class="hide">
+<h1>ARCHIWUM</h1>
+<input id="a-q" type="search" placeholder="Szukaj po nicku lub nazwie wydruku" style="margin-bottom:12px">
+<div id="a-list"></div>
+</section>
+
+<section id="t-his" class="hide">
+<h1>Historia</h1>
+<input id="h-q" type="search" placeholder="Szukaj po nazwie wydruku lub nicku" style="margin-bottom:12px">
+<div class="card"><div id="h-sum"></div>
+<div class="row" style="margin-top:12px"><select id="h-m"><option value="">Wszystkie miesiące</option><option value="1">Styczeń</option><option value="2">Luty</option><option value="3">Marzec</option><option value="4">Kwiecień</option><option value="5">Maj</option><option value="6">Czerwiec</option><option value="7">Lipiec</option><option value="8">Sierpień</option><option value="9">Wrzesień</option><option value="10">Październik</option><option value="11">Listopad</option><option value="12">Grudzień</option></select><select id="h-y"><option value="">Wszystkie lata</option></select></div>
+<button id="h-show">Pokaż dane z miesiąca i roku</button>
+<button id="h-all" class="sec" style="color:var(--tx);width:100%;margin-top:8px;padding:12px">Pokaż wszystko</button></div>
+<div id="h-list"></div>
+</section>
+
+<section id="t-set" class="hide">
+<h1>Ustawienia</h1>
+<div class="card">
+<label>Moc drukarki (W)</label><input id="s-p" type="number" inputmode="decimal">
+<label>Cena prądu (zł za kWh)</label><input id="s-k" type="number" inputmode="decimal" step="0.01">
+<label>Stawka za godzinę pracy (zł za godzinę druku)</label><input id="s-r" type="number" inputmode="decimal" step="0.5">
+<label style="display:flex;align-items:center;justify-content:space-between;gap:12px"><span>Rezerwa na nieudane wydruki i odpad (% ceny filamentu). Zaznaczone = wliczaj</span><input id="s-zo" type="checkbox" style="width:28px;height:28px;flex:0 0 auto"></label><input id="s-z" type="number" inputmode="decimal" step="1">
+<label>Narzut na całość (%)</label><input id="s-m" type="number" inputmode="decimal" step="1">
+<label>Zaokrąglanie ceny końcowej</label>
+<select id="s-ro"><option value="0">Bez zaokrąglania</option><option value="1">Do 1 zł</option><option value="5">Do 5 zł</option><option value="10">Do 10 zł (od połowy w górę)</option></select>
+<label>Ostrzegaj o niskim stanie filamentu poniżej (g)</label><input id="s-low" type="number" inputmode="decimal">
+<label>Motyw</label>
+<select id="s-th"><option value="auto">Automatyczny</option><option value="light">Jasny</option><option value="dark">Ciemny</option></select>
+<p class="mut">Zmiany zapisują się automatycznie.</p>
+</div>
+<div class="card">
+<strong>Kopia zapasowa</strong>
+<p class="mut">Kliknij przycisk, a dane zostaną skopiowane jako tekst. Wklej je w mailu albo notatce. Aby wczytać kopię, wklej tekst w pole poniżej i kliknij „Wczytaj dane z pola”. Uwaga: wczytanie kopii zastępuje dane we wspólnej bazie, czyli u ciebie i u Moniki.</p>
+<button id="b-make">Skopiuj dane (kopia zapasowa)</button>
+<textarea id="b-box" rows="5" style="width:100%;margin-top:10px;padding:10px;border-radius:10px;border:1px solid var(--bd);background:var(--bg);color:var(--tx);font-size:13px" placeholder="Tu pojawi się kopia. Aby wczytać dane, wklej tutaj tekst kopii."></textarea>
+<button id="b-load">Wczytaj dane z pola</button>
+</div>
+<div class="card">
+<strong>Konto i synchronizacja</strong>
+<p class="mut" id="acc"></p>
+<p class="mut" id="syncst"></p>
+<button id="b-out" class="sec" style="margin-top:6px">Wyloguj</button>
+</div>
+<div class="card">
+<strong>Dodaj do ekranu głównego</strong>
+<p class="mut">Opera: menu (trzy kropki lub logo) → „Dodaj do” → „Ekran główny”. Chrome i inne przeglądarki: menu (trzy kropki) → „Dodaj do ekranu głównego”. Dzięki temu skrót będzie na telefonie obok innych apek.</p>
+</div>
+<div class="card">
+<button id="b-wipe" class="sec">Usuń wszystkie dane</button>
+</div>
+</section>
+</main>
+<nav id="nav">
+<button data-t="calc" class="on">Kalkulator</button>
+<button data-t="mag">Magazyn</button>
+<button data-t="ord">Zamówienia</button>
+<button data-t="his">Historia</button>
+<button data-t="set">Ustawienia</button>
+<button data-t="abt">O aplikacji</button>
+</nav>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+<script>
+var CFG={apiKey:"AIzaSyAcSvXFVUqmnDofmqVoKizaBdbofbJtQRs",authDomain:"kalkulator-wydruku.firebaseapp.com",projectId:"kalkulator-wydruku",storageBucket:"kalkulator-wydruku.firebasestorage.app",messagingSenderId:"512055379804",appId:"1:512055379804:web:b338d6b374bf7297bc2399",measurementId:"G-2DHKDRTL8N"};
+var DEF={power:95,kwh:1.2,rate:1,reserve:15,reserveOn:true,markup:100,round:10,low:100};
+function emptyS(){return {settings:Object.assign({},DEF),filaments:[],history:[],orders:[]}}
+var S=emptyS();
+var TH="auto";try{TH=localStorage.getItem("kalk3d_theme")||"auto"}catch(e){}
+var db=null,auth=null,user=null,initDone=false,unsubs=[],saveT=null,loadT=null;
+var shadow={settings:"",filaments:{},history:{},orders:{}},ready={settings:false,filaments:false,history:false,orders:false};
+function fillDefaults(){if(!S.settings)S.settings={};Object.keys(DEF).forEach(function(k){if(S.settings[k]===undefined)S.settings[k]=DEF[k]});["filaments","history","orders"].forEach(function(n){if(!Array.isArray(S[n]))S[n]=[]})}
+function stab(o){return JSON.stringify(o,function(k,v){if(v&&typeof v==="object"&&!Array.isArray(v)){var r={};Object.keys(v).sort().forEach(function(x){r[x]=v[x]});return r}return v})}
+function clean(o){return JSON.parse(JSON.stringify(o))}
+function cloudDoc(){return db.collection("shared").doc("main")}
+function col(n){return cloudDoc().collection(n)}
+function sdoc(){return cloudDoc().collection("meta").doc("settings")}
+function setStatus(t,bad){var e=$("syncst");if(e){e.textContent=t;e.style.color=bad?"var(--bad)":"var(--mut)"}}
+function sortList(n){
+ if(n==="filaments")S[n].sort(function(a,b){return a.id<b.id?-1:a.id>b.id?1:0});
+ else S[n].sort(function(a,b){var x=a.date||"",y=b.date||"";return x<y?1:x>y?-1:(a.id<b.id?1:-1)});
+}
+function save(){clearTimeout(saveT);saveT=setTimeout(push,300)}
+function push(){
+ clearTimeout(saveT);
+ if(!user||!initDone||!db)return;
+ var ops=[];
+ var ss=stab(S.settings);
+ if(ss!==shadow.settings){ops.push(["set",sdoc(),clean(S.settings)]);shadow.settings=ss}
+ ["filaments","history","orders"].forEach(function(n){
+  var seen={};
+  S[n].forEach(function(it){seen[it.id]=1;var j=stab(it);if(shadow[n][it.id]!==j){ops.push(["set",col(n).doc(it.id),clean(it)]);shadow[n][it.id]=j}});
+  Object.keys(shadow[n]).forEach(function(id){if(!seen[id]){ops.push(["del",col(n).doc(id)]);delete shadow[n][id]}});
+ });
+ if(!ops.length)return;
+ setStatus("Zapisywanie…");
+ var left=0,failed=false;
+ for(var i=0;i<ops.length;i+=400){
+  var b=db.batch();
+  ops.slice(i,i+400).forEach(function(o){if(o[0]==="set")b.set(o[1],o[2]);else b.delete(o[1])});
+  left++;
+  b.commit().then(function(){left--;if(!left&&!failed)setStatus("Połączono z bazą ✓")},function(er){failed=true;setStatus("Błąd zapisu: "+(er&&er.code),true);alert("Nie udało się zapisać w bazie ("+(er&&er.code)+").")});
+ }
+}
+function errH(er){
+ var m=er&&er.code==="permission-denied"?"Brak dostępu do danych. Sprawdź reguły Firebase (muszą obejmować ścieżkę shared) i adres e-mail w regułach.":"Błąd bazy: "+(er&&er.code);
+ if(!initDone)showLoad(m);else setStatus(m,true);
+}
+function after(kind){
+ if(!initDone){
+  if(ready.settings&&ready.filaments&&ready.history&&ready.orders){initDone=true;clearTimeout(loadT);hideLogin();refreshAll(true);setStatus("Połączono z bazą ✓");}
+  return;
+ }
+ refreshAll(kind==="settings");
+ setStatus("Połączono z bazą ✓");
+}
+function refreshAll(ws){
+ fillDefaults();
+ if(ws)setVals();
+ applyTheme();renderSel();renderFil();calc();renderOrd();renderArch();
+ if(!$("t-his").classList.contains("hide"))renderHis();
+}
+function listen(n){
+ unsubs.push(col(n).onSnapshot(function(snap){
+  if(!ready[n]){
+   var arr=[];shadow[n]={};
+   snap.docs.forEach(function(d){var o=d.data();o.id=d.id;arr.push(o);shadow[n][d.id]=stab(o)});
+   S[n]=arr;sortList(n);ready[n]=true;after("first");return;
+  }
+  snap.docChanges().forEach(function(ch){
+   if(ch.doc.metadata.hasPendingWrites)return;
+   var id=ch.doc.id,i=S[n].findIndex(function(x){return x.id===id});
+   if(ch.type==="removed"){if(i>-1)S[n].splice(i,1);delete shadow[n][id];return}
+   var o=ch.doc.data();o.id=id;shadow[n][id]=stab(o);
+   if(i>-1)S[n][i]=o;else S[n].push(o);
+  });
+  sortList(n);after(n);
+ },errH));
+}
+function startSync(){
+ stopSync();
+ $("acc").textContent="Zalogowano: "+user.email;
+ setStatus("Łączenie z bazą…");
+ clearTimeout(loadT);
+ loadT=setTimeout(function(){if(!initDone)$("lmsg").textContent="Nie udało się połączyć z bazą. Sprawdź internet i odśwież stronę."},15000);
+ unsubs.push(sdoc().onSnapshot(function(snap){
+  if(ready.settings&&snap.metadata.hasPendingWrites)return;
+  if(snap.exists)S.settings=Object.assign({},DEF,snap.data());
+  shadow.settings=snap.exists?stab(S.settings):"";
+  var was=ready.settings;ready.settings=true;after(was?"settings":"first");
+ },errH));
+ ["filaments","history","orders"].forEach(listen);
+}
+function stopSync(){
+ unsubs.forEach(function(u){try{u()}catch(e){}});unsubs=[];
+ initDone=false;clearTimeout(loadT);
+ ready={settings:false,filaments:false,history:false,orders:false};
+ shadow={settings:"",filaments:{},history:{},orders:{}};
+}
+function $(i){return document.getElementById(i)}
+function num(v){var n=parseFloat(String(v).replace(",","."));return isNaN(n)?0:n}
+function zl(n){return n.toFixed(2).replace(".",",")+" zł"}
+function g(n){return (Math.round(n*10)/10).toString().replace(".",",")+" g"}
+function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,6)}
+function esc(s){var d=document.createElement("div");d.textContent=s;return d.innerHTML}
+
+function tab(t){
+ ["calc","fil","mag","ord","his","set","abt"].forEach(function(x){$("t-"+x).classList.toggle("hide",x!==t)});
+ document.querySelectorAll("#nav button").forEach(function(b){b.classList.toggle("on",b.dataset.t===t);if(b.dataset.t===t&&b.scrollIntoView)b.scrollIntoView({inline:"center",block:"nearest"})});
+ if(t==="his")renderHis();
+}
+$("nav").addEventListener("click",function(e){var b=e.target.closest("button");if(b)tab(b.dataset.t)});
+
+function fil(id){return S.filaments.find(function(f){return f.id===id})}
+function renderSel(){
+ var sel=$("c-fil"),cur=sel.value;
+ sel.innerHTML="";
+ var o0=document.createElement("option");o0.value="";o0.textContent=S.filaments.filter(isMnt).length?"Wybierz filament":"Najpierw dodaj filament w Magazynie";sel.appendChild(o0);
+ S.filaments.filter(isMnt).forEach(function(f){var o=document.createElement("option");o.value=f.id;o.textContent=fl(f)+" ("+g(f.left)+")"+(f.left<=S.settings.low?" ⚠ MAŁO":"");sel.appendChild(o);});
+ if(cur&&fil(cur)&&isMnt(fil(cur)))sel.value=cur;
+ renderExtra();
+}
+function calc(){
+ var parts=getParts(),w=parts.reduce(function(a,p){return a+p.w},0);
+ var ready=parts.length>0&&parts.every(function(p){return p.f})&&w>0&&$("c-h").value.trim()!==""&&$("c-m").value.trim()!=="";
+ var hrs=num($("c-h").value)+num($("c-m").value)/60;
+ var cf=parts.reduce(function(a,p){return a+(p.f&&pw(p.f)>0?p.w*(p.f.price/pw(p.f)):0)},0);
+ var cp=hrs*(S.settings.power/1000)*S.settings.kwh;
+ 
+ var cw=hrs*S.settings.rate;
+ var cr=S.settings.reserveOn?cf*S.settings.reserve/100:0;
+ var sub=cf+cp+cw+cr;var mk=sub*S.settings.markup/100;var raw=sub+mk;var st=S.settings.round;var tot=raw;if(st>0&&raw>0){tot=Math.max(st,Math.floor(raw/st+0.5)*st)}var rd=tot-raw;var auto=tot;var ov=pOv!=null;if(ov){tot=pOv;mk=tot-sub;}var pc=ov?(sub>0?Math.round((tot-sub)/sub*100):0):S.settings.markup;
+ $("r-fil").textContent=zl(cf);$("r-pow").textContent=zl(cp);$("r-work").textContent=zl(cw);$("r-res").textContent=zl(cr);$("r-resl").parentNode.classList.toggle("hide",!S.settings.reserveOn);$("r-resl").textContent="Rezerwa na nieudane wydruki i odpad ("+S.settings.reserve+"%)";
+ $("r-sub").textContent=zl(sub);$("r-mk").textContent=zl(mk);$("r-mkl").textContent="Narzut / Twój zarobek ("+pc+"%)";if(!ov&&document.activeElement!==$("r-price"))$("r-price").value=tot.toFixed(2);$("r-auto").classList.toggle("hide",!ov);$("r-autov").textContent=zl(auto);$("r-rd").textContent=(rd>=0?"+":"−")+zl(Math.abs(rd));$("r-rdl").classList.toggle("hide",!(!ov&&st>0&&raw>0));
+ var wr=$("r-warn");
+ var use={},bad=[];parts.forEach(function(p){if(p.f)use[p.f.id]=(use[p.f.id]||0)+p.w});
+ Object.keys(use).forEach(function(k){var ff=fil(k);if(use[k]>ff.left)bad.push(ff.name+" (zostało "+g(ff.left)+")")});
+ if(bad.length){wr.textContent="Za mało filamentu: "+bad.join(", ")+".";wr.classList.remove("hide");}else wr.classList.add("hide");
+ $("r-price").disabled=!ready;
+ if(!ready){["r-fil","r-pow","r-work","r-res","r-sub","r-mk","r-rd","r-autov"].forEach(function(i){$(i).textContent="—"});$("r-price").value="";$("r-auto").classList.add("hide");$("r-rdl").classList.add("hide");$("r-hint").classList.remove("hide")}else $("r-hint").classList.add("hide");
+ return {parts:parts,use:use,w:w,hrs:hrs,tot:tot,sub:sub,ready:ready};
+}
+["c-fil","c-w","c-h","c-m"].forEach(function(i){$(i).addEventListener("input",calc)});
+$("c-save").addEventListener("click",function(){
+ var r=calc();
+ if(r.parts.some(function(p){return !p.f})){alert("Wybierz filament.");return}
+ if(!$("c-name").value.trim()){alert("Wpisz nazwę wydruku.");return}
+ if(!$("c-link").value.trim()){alert("Wpisz link do wydruku.");return}
+ if(!/^https?:\/\//i.test($("c-link").value.trim())){alert("Link musi zaczynać się od http:// lub https://");return}
+ if(!$("c-nick").value.trim()){alert("Wpisz nick zamawiającego.");return}
+ if(!$("c-src").value.trim()){alert("Wpisz, skąd jest zamówienie.");return}
+ if(r.w<=0){alert("Wpisz wagę wydruku.");return}
+ if($("c-h").value.trim()===""||$("c-m").value.trim()===""){alert("Wpisz godziny i minuty (może być 0).");return}
+ if(r.hrs<=0){alert("Czas druku nie może wynosić 0.");return}
+ 
+ Object.keys(r.use).forEach(function(k){var ff=fil(k);ff.left=Math.max(0,Math.round((ff.left-r.use[k])*10)/10)});
+ var entry={id:uid(),date:new Date().toISOString(),name:$("c-name").value.trim()||"Wydruk",link:$("c-link").value.trim(),nick:$("c-nick").value.trim(),source:$("c-src").value.trim(),fid:r.parts[0].f.id,fname:r.parts.map(function(p){return fl(p.f)}).join(" + "),color:r.parts[0].f.color,colors:r.parts.map(function(p){return p.f.color}),parts:r.parts.map(function(p){return {fid:p.f.id,w:p.w,name:fl(p.f),color:p.f.color}}),w:r.w,hrs:r.hrs,cost:r.tot,sub:r.sub};
+ if(!S.orders)S.orders=[];
+ entry.sent=false;entry.printed=false;S.orders.unshift(entry);
+ save();
+ $("c-name").value="";$("c-link").value="";$("c-nick").value="";$("c-src").value="";extra=[];pOv=null;$("c-w").value="";$("c-h").value="";$("c-m").value="";
+ renderSel();renderFil();calc();
+ renderOrd();alert("Zapisano. Filament odjęty, zamówienie dodane do zakładki Zamówienia.");
+});
+
+function isMnt(f){return true}
+function actBtns(f){
+ var a=isMnt(f)?'<button class="sec" style="color:var(--ac)" data-act="unmount" data-id="'+f.id+'">Zdejmij</button>':'<button class="sec" style="color:var(--ac)" data-act="mount" data-id="'+f.id+'">Załóż</button>';
+ return '<button class="sec" data-del="'+f.id+'">Usuń</button>';
+}
+function pw(f){return f.sw||f.wt}
+function fl(f){var c=catOf(f),n=f.name||"";return n.toUpperCase().indexOf(c)>-1?n:c+" "+n}
+function catOf(f){if(f.cat)return f.cat;var n=(f.name||"").toUpperCase();return n.indexOf("PETG")>-1?"PETG":n.indexOf("TPU")>-1?"TPU":"PLA"}
+function renderFil(){renderList("mounted","f-list");["PLA","PETG","TPU"].forEach(function(c){renderList(c,"m-"+c)})}
+function renderList(st,bid){
+ var box=$(bid);box.innerHTML="";var arr=S.filaments.filter(function(f){return st==="mounted"?isMnt(f):catOf(f)===st});
+ if(!arr.length){box.innerHTML='<p class="mut">Pusto.</p>';return}
+ arr.forEach(function(f){
+  var d=document.createElement("div");d.className="card";
+  var pct=f.wt>0?Math.min(100,Math.max(0,f.left/f.wt*100)):0;
+  d.innerHTML='<div class="hd"><strong><span class="dot" style="background:'+esc(bgc(f.color))+'"></span>'+esc(f.name)+'</strong><span style="display:flex;gap:6px">'+actBtns(f)+'</span></div>'+
+  '<div class="bar"><i style="width:'+pct+'%"></i></div><div class="mut"'+(f.left<=S.settings.low?' style="color:var(--bad);font-weight:700"':'')+'>Zostało '+g(f.left)+(f.left<=S.settings.low?' — MAŁO!':'')+'</div>'+
+  '<div class="row">'+
+  '<div><label>Cena szpuli (zł)</label><input type="number" inputmode="decimal" data-k="price" data-id="'+f.id+'" value="'+f.price+'"></div>'+
+  '<div><label>Zostało (g)</label><input type="number" inputmode="decimal" data-k="left" data-id="'+f.id+'" value="'+f.left+'" readonly style="opacity:.7"></div></div>';
+  box.appendChild(d);
+ });
+}
+["f-list","m-PLA","m-PETG","m-TPU"].forEach(function(bid){$(bid).addEventListener("change",function(e){
+ var i=e.target;if(!i.dataset.k)return;
+ var f=fil(i.dataset.id);if(!f)return;
+ f[i.dataset.k]=Math.max(0,num(i.value));save();renderFil();renderSel();calc();
+});});
+["f-list","m-PLA","m-PETG","m-TPU"].forEach(function(bid){$(bid).addEventListener("click",function(e){
+ var re=e.target.dataset.re;if(re){var rf=fil(re);if(rf)restock(rf);return}
+ var act=e.target.dataset.act;
+ if(act){var ff=fil(e.target.dataset.id);if(!ff)return;
+  var go=function(){ff.st=act==="mount"?"mounted":"used";save();renderFil();renderSel();calc();};
+  if(act==="unmount")ask("Zdjąć filament "+ff.name+" i przenieść do magazynu?",go,"Tak, zdejmij");else go();
+  return}
+ var id=e.target.dataset.del;if(!id)return;
+ ask("Na pewno usunąć ten filament? Historia wydruków zostanie.",function(){S.filaments=S.filaments.filter(function(f){return f.id!==id});save();renderFil();renderSel();calc();});
+});});
+$("f-add").addEventListener("click",function(){
+ var n=$("f-name").value.trim().toUpperCase(),p=num($("f-price").value),w=num($("f-wt").value);
+ if(!n||w<=0){alert("Podaj nazwę i wagę szpuli.");return}
+ S.filaments.push({id:uid(),name:n,color:rb.f?"rainbow":$("f-col").value,price:p,wt:w,left:w});
+ save();$("f-name").value="";$("f-price").value="";$("f-wt").value="";rb.f=false;paintRb(["f-rb","f-col","f"]);
+ renderFil();renderSel();calc();
+});
+
+function renderHis(){
+ fillYears();
+ var per=S.history.filter(function(h){if(!hF)return true;var d=new Date(h.date);return (!hF.y||d.getFullYear()===hF.y)&&(!hF.m||d.getMonth()+1===hF.m)});
+ var tot=per.reduce(function(a,h){return a+(h.cost||0)},0),tw=per.reduce(function(a,h){return a+(h.w||0)},0);
+ var earn=per.reduce(function(a,h){var s=h.sub!=null?h.sub:(h.cost||0)/(1+S.settings.markup/100);return a+((h.cost||0)-s)},0);
+ var MN=["styczeń","luty","marzec","kwiecień","maj","czerwiec","lipiec","sierpień","wrzesień","październik","listopad","grudzień"];
+ var plbl=!hF?"":((hF.m?MN[hF.m-1]+" ":"")+(hF.y||"")).trim();
+ $("h-sum").innerHTML=(plbl?'<div class="mut" style="margin-bottom:4px">'+esc(plbl)+'</div>':'')+'<div class="line"><span>Liczba wydruków</span><b>'+per.length+'</b></div><div class="line"><span>Zużyty filament</span><b>'+g(tw)+'</b></div><div class="line"><span>Suma wycen</span><b>'+zl(tot)+'</b></div><div class="line"><span>Zarobek</span><b>'+zl(earn)+'</b></div>';
+ var box=$("h-list");box.innerHTML="";
+ var hq=($("h-q").value||"").trim().toLowerCase();var hl=per.filter(function(h){return !hq||((h.name||"")+" "+(h.nick||"")).toLowerCase().indexOf(hq)>-1});
+ if(!hl.length){box.innerHTML='<p class="mut">'+(hq?"Brak wyników.":"Brak zapisanych wydruków.")+'</p>';return}
+ hl.forEach(function(h){
+  var d=document.createElement("div");d.className="card";
+  var dt=new Date(h.date).toLocaleDateString("pl-PL");
+  var hh=Math.floor(h.hrs),mm=Math.round((h.hrs-hh)*60);
+  d.innerHTML='<div class="hd"><strong>'+esc(h.name)+'</strong><strong>'+zl(h.cost)+'</strong></div>'+(h.nick?'<div style="font-size:16px;margin:2px 0 4px">Zamawiający: '+esc(h.nick)+(h.source?' ('+esc(h.source)+')':'')+'</div>':'')+
+  '<div class="mut">'+(h.colors||[h.color||"#888"]).map(function(c){return '<span class="dot" style="background:'+esc(bgc(c))+'"></span>'}).join("")+esc(h.fname)+' · '+g(h.w)+' · '+hh+' h '+mm+' min · '+dt+'</div>'+(/^https?:\/\//i.test(h.link||"")?'<div class="mut" style="margin-top:6px;word-break:break-all"><a href="'+esc(h.link).replace(/"/g,"%22")+'" target="_blank" rel="noopener noreferrer" style="color:var(--ac)">Link do wydruku</a></div>':'')+
+  '<div style="margin-top:10px"><button class="sec" data-hd="'+h.id+'">Usuń</button></div>';
+  box.appendChild(d);
+ });
+}
+$("h-list").addEventListener("click",function(e){
+ var id=e.target.dataset.hd;if(!id)return;
+ var h=S.history.find(function(x){return x.id===id});if(!h)return;
+ ask("Usunąć ten wydruk z historii?",function(){
+ 
+ S.history=S.history.filter(function(x){return x.id!==id});
+ save();renderHis();renderFil();renderSel();calc();});
+});
+
+var extra=[];
+function getParts(){
+ var arr=[{f:fil($("c-fil").value),w:num($("c-w").value)}];
+ extra.forEach(function(x){if(x.w>0)arr.push({f:fil(x.fid),w:x.w})});
+ return arr;
+}
+function renderExtra(){
+ var box=$("c-extra");box.innerHTML="";
+ extra.forEach(function(x,i){
+  var ff=fil(x.fid);if(!ff||!isMnt(ff)){var m=S.filaments.filter(isMnt)[0];x.fid=m?m.id:""}
+  var wrap=document.createElement("div");
+  var lb=document.createElement("label");lb.textContent="Kolor "+(i+2)+": filament i waga (g)";wrap.appendChild(lb);
+  var d=document.createElement("div");d.className="row";d.style.alignItems="center";
+  var s=document.createElement("select");s.style.flex="2";
+  S.filaments.filter(isMnt).forEach(function(f){var o=document.createElement("option");o.value=f.id;o.textContent=fl(f)+" ("+g(f.left)+")"+(f.left<=S.settings.low?" ⚠ MAŁO":"");s.appendChild(o)});
+  s.value=x.fid;
+  s.addEventListener("change",function(){x.fid=s.value;calc()});
+  var inp=document.createElement("input");inp.type="number";inp.setAttribute("inputmode","decimal");inp.placeholder="g";inp.value=x.w||"";
+  inp.addEventListener("input",function(){x.w=num(inp.value);calc()});
+  var b=document.createElement("button");b.className="sec";b.textContent="Usuń";b.style.flex="0 0 auto";
+  b.addEventListener("click",function(){extra.splice(i,1);renderExtra();calc()});
+  d.appendChild(s);d.appendChild(inp);d.appendChild(b);wrap.appendChild(d);box.appendChild(wrap);
+ });
+}
+$("c-addcol").addEventListener("click",function(){
+ var m=S.filaments.filter(isMnt)[0];
+ if(!m){alert("Najpierw dodaj filament w Magazynie.");return}
+ extra.push({fid:m.id,w:0});renderExtra();
+});
+function restock(f){
+ var o=document.createElement("div");o.style.cssText="position:fixed;inset:0;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;padding:20px;z-index:99";
+ var b=document.createElement("div");b.className="card";b.style.cssText="max-width:340px;width:100%;margin:0";
+ b.innerHTML='<strong>Dokup: '+esc(f.name)+'</strong><p class="mut" style="margin:6px 0 0">Teraz zostało '+g(f.left)+'</p><label>Ile gramów dokupiłeś</label><input id="rs-g" type="number" inputmode="decimal" placeholder="np. 1000"><label>Ile zapłaciłeś (zł), puste = jak dotychczas</label><input id="rs-p" type="number" inputmode="decimal" placeholder="np. 80"><div class="row"><button id="rs-n" style="background:var(--bd);color:var(--tx)">Anuluj</button><button id="rs-y">Dodaj</button></div>';
+ o.appendChild(b);document.body.appendChild(o);
+ $("rs-n").onclick=function(){o.remove()};
+ $("rs-y").onclick=function(){
+  var gr=num($("rs-g").value);
+  if(gr<=0){alert("Wpisz, ile gramów dokupiłeś.");return}
+  var pr=$("rs-p").value.trim()===""?gr*(f.wt>0?f.price/f.wt:0):num($("rs-p").value);
+  f.left=Math.round((f.left+gr)*10)/10;f.wt=Math.round((f.wt+gr)*10)/10;f.price=Math.round((f.price+pr)*100)/100;
+  save();o.remove();renderFil();renderSel();calc();alert("Dodano. Zostało "+g(f.left)+".");
+ };
+}
+var pOv=null;
+$("r-price").addEventListener("input",function(){var v=$("r-price").value.trim();pOv=v===""?null:Math.max(0,num(v));calc();});
+$("r-price").addEventListener("blur",function(){calc();});
+$("r-reset").addEventListener("click",function(){pOv=null;$("r-price").value="";calc();});
+var hF=null;
+function fillYears(){
+ var sel=$("h-y"),cur=sel.value,ys={};ys[new Date().getFullYear()]=1;
+ S.history.forEach(function(h){var y=new Date(h.date).getFullYear();if(y)ys[y]=1});
+ var list=Object.keys(ys).sort(function(a,b){return b-a});
+ if(sel.options.length===list.length+1)return;
+ sel.innerHTML='<option value="">Wszystkie lata</option>'+list.map(function(y){return '<option value="'+y+'">'+y+'</option>'}).join("");
+ sel.value=cur;
+}
+$("h-show").addEventListener("click",function(){
+ var m=parseInt($("h-m").value,10)||0,y=parseInt($("h-y").value,10)||0;
+ hF=(m||y)?{m:m,y:y}:null;renderHis();
+});
+$("h-all").addEventListener("click",function(){hF=null;$("h-m").value="";$("h-y").value="";renderHis();});
+function renderAbout(){
+ var a={a:"Dominik Li-u-fa, Monika Li-u-fa",h:"Bambu Lab A1 z AMS"};
+ $("ab-card").innerHTML='<div style="font-size:22px;font-weight:800;text-align:center">Kalkulator druku 3D</div><div class="mut" style="margin:14px 0 14px;text-align:center">Wersja 1.0 · listopad 2026</div>'+
+ '<div class="line"><span>Autor</span><b>'+esc(a.a||"(uzupełnij poniżej)")+'</b></div>'+
+ (a.c?'<div class="line"><span>Kontakt</span><b>'+esc(a.c)+'</b></div>':'')+
+ (a.h?'<div class="line"><span>Sprzęt</span><b>'+esc(a.h)+'</b></div>':'')+
+ ''+
+ '<div class="mut" style="margin-top:10px">© 2026 '+esc(a.a||"autor aplikacji")+'. Wszelkie prawa zastrzeżone.</div>';
+}
+function initAbout(){renderAbout()}
+function ordDet(o){
+ var dt=o.date?new Date(o.date).toLocaleDateString("pl-PL"):"";
+ if(!o.parts)return dt?'<div class="mut" style="margin-top:6px">Dodano: '+dt+'</div>':'';
+ var hh=Math.floor(o.hrs||0),mm=Math.round(((o.hrs||0)-hh)*60);
+ var ls=o.parts.map(function(p){return '<div style="margin-top:4px"><span class="dot" style="background:'+esc(bgc(p.color))+'"></span>'+esc(p.name||"")+' — '+g(p.w)+'</div>'}).join("");
+ return ls+'<div class="mut" style="margin-top:6px">'+(o.source?'Źródło: '+esc(o.source)+' · ':'')+'Czas druku: '+hh+' h '+mm+' min · Dodano: '+dt+'</div>';
+}
+function sendOrder(id){
+ var o=(S.orders||[]).find(function(x){return x.id===id});if(!o)return;
+ ask("Oznaczyć jako wysłane i przenieść do Historii?",function(){
+  S.history.unshift({id:uid(),date:o.date||new Date().toISOString(),name:o.name,link:o.link||"",nick:(o.nick&&o.nick!=="-")?o.nick:"",source:o.source||"",fid:o.fid,fname:o.fname||"",color:o.color,colors:o.colors||[],parts:o.parts||[],w:o.w||0,hrs:o.hrs||0,cost:o.cost||0,sub:o.sub});
+  S.orders=S.orders.filter(function(x){return x.id!==id});
+  save();renderOrd();renderArch();alert("Przeniesiono do Historii.");
+ },"Tak, przenieś",function(){renderOrd()});
+}
+function ask(msg,yes,lbl,no){
+ var o=document.createElement("div");o.style.cssText="position:fixed;inset:0;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;padding:20px;z-index:99";
+ var b=document.createElement("div");b.className="card";b.style.cssText="max-width:340px;width:100%;margin:0";
+ var p=document.createElement("p");p.textContent=msg;p.style.margin="0 0 6px";
+ var r=document.createElement("div");r.className="row";
+ var n=document.createElement("button");n.textContent="Nie";n.style.background="var(--bd)";n.style.color="var(--tx)";
+ var y=document.createElement("button");y.textContent=lbl||"Tak, usuń";y.style.background=lbl?"var(--ac)":"var(--bad)";y.style.color=lbl?"var(--acx)":"#fff";
+ n.onclick=function(){o.remove();if(no)no()};y.onclick=function(){o.remove();yes()};
+ r.appendChild(n);r.appendChild(y);b.appendChild(p);b.appendChild(r);o.appendChild(b);document.body.appendChild(o);
+}
+function toast(m){
+ var t=document.createElement("div");t.textContent=m;
+ t.style.cssText="position:fixed;left:16px;right:16px;bottom:calc(76px + env(safe-area-inset-bottom,0px));max-width:480px;margin:0 auto;background:var(--tx);color:var(--bg);padding:12px 14px;border-radius:10px;text-align:center;z-index:98";
+ document.body.appendChild(t);setTimeout(function(){t.remove()},2800);
+}
+window.alert=toast;
+var rb={m:false,f:false};
+function applyTheme(){var t=TH,r=document.documentElement;if(t==="light"||t==="dark")r.setAttribute("data-theme",t);else r.removeAttribute("data-theme");}
+$("b-make").addEventListener("click",function(){
+ var t=JSON.stringify(S),bx=$("b-box"),ok=false;bx.value=t;bx.focus();bx.select();
+ try{if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(t).then(function(){alert("Skopiowano. Wklej w mailu lub notatce.")},function(){alert("Zaznacz i skopiuj tekst z pola.")});return}}catch(e){}
+ try{ok=document.execCommand("copy")}catch(e){}
+ alert(ok?"Skopiowano. Wklej w mailu lub notatce.":"Zaznacz i skopiuj tekst z pola.");
+});
+$("b-load").addEventListener("click",function(){
+ var d;try{d=JSON.parse($("b-box").value.trim())}catch(e){d=null}
+ if(!d||!d.settings||!Array.isArray(d.filaments)){alert("To nie wygląda na kopię zapasową.");return}
+ ask("Wczytanie kopii zastąpi WSZYSTKIE dane we wspólnej bazie, u ciebie i u Moniki. Kontynuować?",function(){S=d;fillDefaults();["filaments","history","orders"].forEach(function(n){S[n].forEach(function(it){if(!it.id)it.id=uid();delete it.arch})});push();refreshAll(true);alert("Wczytano kopię i wysłano do bazy.")},"Tak, wczytaj");
+});
+$("b-wipe").addEventListener("click",function(){
+ ask("Na pewno usunąć WSZYSTKIE dane (filamenty, historię, zamówienia, ustawienia) z wspólnej bazy, u ciebie i u Moniki?",function(){
+  setTimeout(function(){ask("Ostatnie pytanie: tego nie da się cofnąć. Usunąć wszystko?",function(){
+   S=emptyS();push();refreshAll(true);alert("Usunięto wszystkie dane.");
+  });},50);
+ });
+});
+
+function bgc(c){return c==="rainbow"?"linear-gradient(135deg,#e53935,#fdd835,#43a047,#1e88e5,#8e24aa)":c}
+function paintRb(p){var on=rb[p[2]],b=$(p[0]);b.style.background=on?bgc("rainbow"):"transparent";b.style.color=on?"#000":"var(--tx)";b.style.borderColor=on?"var(--tx)":"var(--bd)";$(p[1]).style.opacity=on?".3":"1";}
+[["m-rb","m-col","m"],["f-rb","f-col","f"]].forEach(function(p){$(p[0]).addEventListener("click",function(){rb[p[2]]=!rb[p[2]];paintRb(p)})});
+function chk(o,k,t){return '<label style="display:flex;align-items:center;gap:10px;margin:0;font-size:16px;color:var(--tx)"><input type="checkbox" style="width:28px;height:28px;flex:0 0 auto" data-ok="'+k+'" data-id="'+o.id+'"'+(o[k]?' checked':'')+'>'+t+'</label>'}
+function renderArch(){
+ var box=$("a-list");box.innerHTML="";
+ var q=($("a-q").value||"").trim().toLowerCase();
+ var arr=(S.orders||[]).filter(function(o){return o.arch&&(!q||(o.name+" "+o.nick).toLowerCase().indexOf(q)>-1)});
+ if(!arr.length){box.innerHTML='<p class="mut">'+(q?"Brak wyników.":"Archiwum jest puste.")+'</p>';return}
+ arr.forEach(function(o){
+  var d=document.createElement("div");d.className="card";
+  var lk=/^https?:\/\//i.test(o.link||"")?'<div style="margin-top:4px;word-break:break-all"><a href="'+esc(o.link).replace(/"/g,"%22")+'" target="_blank" rel="noopener noreferrer" style="color:var(--ac)">Link do wydruku</a></div>':'';
+  d.innerHTML='<div class="hd"><div><strong>'+esc(o.name)+'</strong><div style="font-size:16px;margin-top:2px">Zamawiający: '+esc(o.nick||"-")+'</div>'+lk+'</div><div style="display:flex;flex-direction:column;gap:6px"><button class="sec" style="color:var(--ac)" data-ar="'+o.id+'">Przywróć</button><button class="sec" data-ad="'+o.id+'">Usuń</button></div></div>'+ordDet(o)+
+  '<div class="row" style="margin-top:12px">'+chk(o,"printed","Wydrukowane")+chk(o,"sent","Wysłane")+'</div>';
+  d.querySelectorAll("input[type=checkbox]").forEach(function(c){c.disabled=true});
+  box.appendChild(d);
+ });
+}
+$("a-q").addEventListener("input",renderArch);
+$("h-q").addEventListener("input",renderHis);
+$("a-list").addEventListener("change",function(e){
+ var k=e.target.dataset.ok;if(!k)return;
+ var o=(S.orders||[]).find(function(x){return x.id===e.target.dataset.id});
+ if(o){o[k]=e.target.checked;save();}
+});
+$("a-list").addEventListener("click",function(e){
+ var r=e.target.dataset.ar,x=e.target.dataset.ad;
+ if(r)ask("Przywrócić zamówienie do listy zamówień?",function(){var o=S.orders.find(function(y){return y.id===r});if(o){o.arch=false;save();renderOrd();renderArch();}},"Tak, przywróć");
+ else if(x)ask("Usunąć to zamówienie na stałe z archiwum?",function(){S.orders=S.orders.filter(function(y){return y.id!==x});save();renderArch();});
+});
+function renderOrd(){
+ var box=$("o-list");box.innerHTML="";
+ var arr=(S.orders||[]);
+ if(!arr.length){box.innerHTML='<p class="mut">Brak zamówień.</p>';return}
+ arr.forEach(function(o){
+  var d=document.createElement("div");d.className="card";
+  d.innerHTML='<div class="hd"><div><strong>'+esc(o.name)+'</strong><div style="font-size:16px;margin-top:2px">Zamawiający: '+esc(o.nick||"-")+'</div>'+(/^https?:\/\//i.test(o.link||"")?'<div style="margin-top:4px;word-break:break-all"><a href="'+esc(o.link).replace(/"/g,"%22")+'" target="_blank" rel="noopener noreferrer" style="color:var(--ac)">Link do wydruku</a></div>':'')+'</div><div style="display:flex;flex-direction:column;gap:6px"><button class="sec" data-od="'+o.id+'">Usuń</button></div></div>'+ordDet(o)+
+  '<div class="row" style="margin-top:12px">'+chk(o,"printed","Wydrukowane")+chk(o,"sent","Wysłane")+'</div>';
+  box.appendChild(d);
+ });
+}
+$("o-add").addEventListener("click",function(){
+ var n=$("o-name").value.trim(),k=$("o-nick").value.trim();
+ if(!n){alert("Wpisz nazwę wydruku.");return}
+ if(!S.orders)S.orders=[];
+ S.orders.unshift({id:uid(),date:new Date().toISOString(),name:n,link:$("o-link").value.trim(),nick:k||"-",sent:false,printed:false});
+ save();$("o-name").value="";$("o-link").value="";$("o-nick").value="";renderOrd();
+});
+$("o-list").addEventListener("change",function(e){
+ var k=e.target.dataset.ok;if(!k)return;
+ if(k==="sent"&&e.target.checked){sendOrder(e.target.dataset.id);return}
+ var o=(S.orders||[]).find(function(x){return x.id===e.target.dataset.id});
+ if(o){o[k]=e.target.checked;save();}
+});
+$("o-list").addEventListener("click",function(e){
+ var oa=e.target.dataset.oa;
+ if(oa){ask("Przenieść zamówienie do archiwum?",function(){var o=S.orders.find(function(x){return x.id===oa});if(o){o.arch=true;save();renderOrd();renderArch();}},"Tak, archiwizuj");return}
+ var id=e.target.dataset.od;if(!id)return;
+ ask("Usunąć to zamówienie?",function(){S.orders=S.orders.filter(function(x){return x.id!==id});save();renderOrd();});
+});
+$("m-add").addEventListener("click",function(){
+ var n=$("m-name").value.trim().toUpperCase(),p=num($("m-price").value),w=num($("m-wt").value);
+ if(!n||w<=0){alert("Podaj nazwę i wagę szpuli.");return}
+ if(!$("m-cat").value){alert("Wybierz kategorię.");return}
+ var lf=w;
+ 
+ var cat=$("m-cat").value;
+ var ex=S.filaments.find(function(f){return (f.name||"").toUpperCase()===n&&catOf(f)===cat});
+ if(ex){ex.left=Math.round((ex.left+w)*10)/10;ex.wt=Math.round((ex.wt+w)*10)/10;if(p>0){ex.price=p;ex.sw=w}alert("Dodano do istniejącego filamentu "+n+". Zostało "+g(ex.left)+".")}
+ else S.filaments.push({id:uid(),name:n,color:rb.m?"rainbow":$("m-col").value,price:p,wt:w,sw:w,left:lf,st:"used",cat:cat});
+ save();$("m-name").value="";$("m-price").value="";$("m-wt").value="";rb.m=false;paintRb(["m-rb","m-col","m"]);$("m-cat").value="";
+ renderFil();renderSel();
+});
+function setVals(){
+ $("s-p").value=S.settings.power;$("s-k").value=S.settings.kwh;$("s-r").value=S.settings.rate;$("s-z").value=S.settings.reserve;$("s-m").value=S.settings.markup;$("s-ro").value=String(S.settings.round);$("s-low").value=S.settings.low;$("s-th").value=TH;$("s-zo").checked=!!S.settings.reserveOn;
+}
+function initSet(){
+ setVals();
+ $("s-ro").addEventListener("change",function(){S.settings.round=num($("s-ro").value);save();calc();});
+ $("s-th").addEventListener("change",function(){TH=$("s-th").value;try{localStorage.setItem("kalk3d_theme",TH)}catch(e){}applyTheme();});
+ $("s-low").addEventListener("input",function(){S.settings.low=Math.max(0,num($("s-low").value));save();renderFil();renderSel();});$("s-zo").checked=!!S.settings.reserveOn;$("s-zo").addEventListener("change",function(){S.settings.reserveOn=$("s-zo").checked;save();calc();});
+ [["s-p","power"],["s-k","kwh"],["s-r","rate"],["s-z","reserve"],["s-m","markup"]].forEach(function(p){
+  $(p[0]).addEventListener("input",function(){S.settings[p[1]]=Math.max(0,num($(p[0]).value));save();calc();});
+ });
+}
+fillDefaults();initSet();initAbout();renderSel();renderFil();calc();renderOrd();renderArch();applyTheme();
+function errPl(c){
+ if(c==="auth/invalid-credential"||c==="auth/wrong-password"||c==="auth/user-not-found"||c==="auth/invalid-email")return "Zły e-mail lub hasło.";
+ if(c==="auth/too-many-requests")return "Za dużo prób. Spróbuj za chwilę.";
+ if(c==="auth/network-request-failed")return "Brak połączenia z internetem.";
+ if(c==="auth/operation-not-supported-in-this-environment")return "Otwórz apkę pod adresem internetowym (https://), a nie z pliku.";
+ if(c==="auth/unauthorized-domain")return "Ten adres nie jest dodany w Firebase (Authorized domains).";
+ return "Nie udało się zalogować ("+c+").";
+}
+function showLogin(){$("login").classList.remove("hide");$("lf").classList.remove("hide");$("lm").classList.add("hide")}
+function showLoad(m){$("login").classList.remove("hide");$("lf").classList.add("hide");$("lm").classList.remove("hide");$("lmsg").textContent=m;$("l-err").textContent=""}
+function hideLogin(){$("login").classList.add("hide")}
+$("lf").addEventListener("submit",function(e){
+ e.preventDefault();
+ var em=$("l-mail").value.trim().toLowerCase(),pw=$("l-pass").value;
+ $("l-err").textContent="";$("l-btn").disabled=true;
+ auth.signInWithEmailAndPassword(em,pw).then(function(){$("l-pass").value=""},function(er){$("l-err").textContent=errPl(er&&er.code)}).then(function(){$("l-btn").disabled=false});
+});
+$("l-out").addEventListener("click",function(){if(auth)auth.signOut()});
+$("b-out").addEventListener("click",function(){ask("Wylogować się z apki?",function(){if(auth)auth.signOut()},"Tak, wyloguj")});
+function startAuth(){
+ if(!window.firebase){showLogin();$("l-btn").disabled=true;$("l-err").textContent="Nie udało się wczytać Firebase. Sprawdź internet i odśwież stronę.";return}
+ firebase.initializeApp(CFG);auth=firebase.auth();db=firebase.firestore();
+ try{db.enablePersistence({synchronizeTabs:true}).catch(function(){})}catch(e){}
+ showLoad("Łączenie…");
+ auth.onAuthStateChanged(function(u){
+  if(u){user=u;showLoad("Wczytywanie danych…");startSync()}
+  else{user=null;stopSync();S=emptyS();refreshAll(true);showLogin()}
+ });
+}
+startAuth();
+</script>
+</body>
+</html>
