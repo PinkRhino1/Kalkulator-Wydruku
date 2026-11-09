@@ -170,7 +170,7 @@ input[type=color]{padding:2px;height:44px}
 <p class="mut" id="acc"></p>
 <p class="mut" id="syncst"></p>
 <label>Wyloguj po bezczynności (to urządzenie)</label>
-<select id="s-idle"><option value="1">1 minuta</option><option value="3">3 minuty</option><option value="5">5 minut</option><option value="10">10 minut</option><option value="30">30 minut</option><option value="0">Nigdy</option></select>
+<select id="s-idle"><option value="3">3 minuty</option><option value="15">15 minut</option><option value="0">Nigdy</option></select>
 <button id="b-out" class="sec" style="margin-top:10px">Wyloguj</button>
 </div>
 <div class="card">
@@ -673,6 +673,7 @@ function startAuth(){
  });
 }
 var IDLE=3;try{var iv=localStorage.getItem("kalk3d_idle");if(iv!==null&&!isNaN(parseFloat(iv)))IDLE=parseFloat(iv)}catch(e){}
+if(IDLE!==0&&IDLE!==3&&IDLE!==15)IDLE=3;
 var lastAct=Date.now(),lastSaved=0;
 function touchNow(){lastAct=Date.now();lastSaved=lastAct;try{localStorage.setItem("kalk3d_last",String(lastAct))}catch(e){}}
 function touch(){lastAct=Date.now();if(lastAct-lastSaved>5000){lastSaved=lastAct;try{localStorage.setItem("kalk3d_last",String(lastAct))}catch(e){}}}
