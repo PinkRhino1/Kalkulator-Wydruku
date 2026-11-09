@@ -169,7 +169,9 @@ input[type=color]{padding:2px;height:44px}
 <strong>Konto i synchronizacja</strong>
 <p class="mut" id="acc"></p>
 <p class="mut" id="syncst"></p>
-<button id="b-out" class="sec" style="margin-top:6px">Wyloguj</button>
+<label>Wyloguj po bezczynności (to urządzenie)</label>
+<select id="s-idle"><option value="1">1 minuta</option><option value="3">3 minuty</option><option value="5">5 minut</option><option value="10">10 minut</option><option value="30">30 minut</option><option value="0">Nigdy</option></select>
+<button id="b-out" class="sec" style="margin-top:10px">Wyloguj</button>
 </div>
 <div class="card">
 <strong>Dodaj do ekranu głównego</strong>
@@ -205,7 +207,7 @@ function clean(o){return JSON.parse(JSON.stringify(o))}
 function cloudDoc(){return db.collection("shared").doc("main")}
 function col(n){return cloudDoc().collection(n)}
 function sdoc(){return cloudDoc().collection("meta").doc("settings")}
-function setStatus(t,bad){var e=$("syncst");if(e){e.textContent=t;e.style.color=bad?"var(--bad)":"var(--mut)"}}
+function setStatus(t,k){var e=$("syncst");if(e){e.textContent=t;e.style.color=k==="ok"?"var(--ok)":(k?"var(--bad)":"var(--mut)");e.style.fontWeight=k?"700":"400";e.style.fontSize="15px"}}
 function sortList(n){
  if(n==="filaments")S[n].sort(function(a,b){return a.id<b.id?-1:a.id>b.id?1:0});
  else S[n].sort(function(a,b){var x=a.date||"",y=b.date||"";return x<y?1:x>y?-1:(a.id<b.id?1:-1)});
@@ -229,7 +231,7 @@ function push(){
   var b=db.batch();
   ops.slice(i,i+400).forEach(function(o){if(o[0]==="set")b.set(o[1],o[2]);else b.delete(o[1])});
   left++;
-  b.commit().then(function(){left--;if(!left&&!failed)setStatus("Połączono z bazą ✓")},function(er){failed=true;setStatus("Błąd zapisu: "+(er&&er.code),true);alert("Nie udało się zapisać w bazie ("+(er&&er.code)+").")});
+  b.commit().then(function(){left--;if(!left&&!failed)setStatus("Połączono z bazą ✓","ok")},function(er){failed=true;setStatus("Błąd zapisu: "+(er&&er.code),true);alert("Nie udało się zapisać w bazie ("+(er&&er.code)+").")});
  }
 }
 function errH(er){
@@ -238,11 +240,11 @@ function errH(er){
 }
 function after(kind){
  if(!initDone){
-  if(ready.settings&&ready.filaments&&ready.history&&ready.orders){initDone=true;clearTimeout(loadT);hideLogin();refreshAll(true);setStatus("Połączono z bazą ✓");}
+  if(ready.settings&&ready.filaments&&ready.history&&ready.orders){initDone=true;clearTimeout(loadT);hideLogin();refreshAll(true);tab("calc");window.scrollTo(0,0);setStatus("Połączono z bazą ✓","ok");}
   return;
  }
  refreshAll(kind==="settings");
- setStatus("Połączono z bazą ✓");
+ setStatus("Połączono z bazą ✓","ok");
 }
 function refreshAll(ws){
  fillDefaults();
@@ -652,7 +654,7 @@ function hideLogin(){$("login").classList.add("hide")}
 $("lf").addEventListener("submit",function(e){
  e.preventDefault();
  var em=$("l-mail").value.trim().toLowerCase(),pw=$("l-pass").value;
- $("l-err").textContent="";$("l-btn").disabled=true;
+ $("l-err").textContent="";$("l-btn").disabled=true;touchNow();
  auth.signInWithEmailAndPassword(em,pw).then(function(){$("l-pass").value=""},function(er){$("l-err").textContent=errPl(er&&er.code)}).then(function(){$("l-btn").disabled=false});
 });
 $("l-out").addEventListener("click",function(){if(auth)auth.signOut()});
@@ -663,10 +665,28 @@ function startAuth(){
  try{db.enablePersistence({synchronizeTabs:true}).catch(function(){})}catch(e){}
  showLoad("Łączenie…");
  auth.onAuthStateChanged(function(u){
-  if(u){user=u;showLoad("Wczytywanie danych…");startSync()}
+  if(u){
+   var st=0;try{st=parseInt(localStorage.getItem("kalk3d_last")||"0",10)||0}catch(e){}
+   if(IDLE&&st&&Date.now()-st>IDLE*60000){user=null;auth.signOut().then(function(){$("l-err").textContent="Wylogowano z powodu bezczynności."});return}
+   user=u;showLoad("Wczytywanie danych…");startSync()}
   else{user=null;stopSync();S=emptyS();refreshAll(true);showLogin()}
  });
 }
+var IDLE=3;try{var iv=localStorage.getItem("kalk3d_idle");if(iv!==null&&!isNaN(parseFloat(iv)))IDLE=parseFloat(iv)}catch(e){}
+var lastAct=Date.now(),lastSaved=0;
+function touchNow(){lastAct=Date.now();lastSaved=lastAct;try{localStorage.setItem("kalk3d_last",String(lastAct))}catch(e){}}
+function touch(){lastAct=Date.now();if(lastAct-lastSaved>5000){lastSaved=lastAct;try{localStorage.setItem("kalk3d_last",String(lastAct))}catch(e){}}}
+["pointerdown","keydown","touchstart","scroll","input","click"].forEach(function(ev){window.addEventListener(ev,touch,true)});
+function idleCheck(){
+ if(!user||!auth||!IDLE)return;
+ if(Date.now()-lastAct>IDLE*60000){auth.signOut().then(function(){$("l-err").textContent="Wylogowano z powodu bezczynności."})}
+}
+setInterval(idleCheck,5000);
+document.addEventListener("visibilitychange",idleCheck);
+$("s-idle").value=String(IDLE);
+$("s-idle").addEventListener("change",function(){IDLE=parseFloat($("s-idle").value);try{localStorage.setItem("kalk3d_idle",String(IDLE))}catch(e){}touch()});
+window.addEventListener("offline",function(){if(user)setStatus("Brak połączenia z internetem. Zmiany zapiszą się po powrocie sieci.",true)});
+window.addEventListener("online",function(){if(user&&initDone)setStatus("Połączono z bazą ✓","ok")});
 startAuth();
 </script>
 </body>
