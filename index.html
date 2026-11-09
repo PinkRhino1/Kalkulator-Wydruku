@@ -42,7 +42,8 @@ input[type=color]{padding:2px;height:44px}
 <div style="font-size:22px;font-weight:800;text-align:center;margin-bottom:12px">Kalkulator druku 3D</div>
 <form id="lf" autocomplete="on">
 <label>E-mail</label><input id="l-mail" type="email" autocomplete="username" required>
-<label>Hasło</label><input id="l-pass" type="password" autocomplete="current-password" required>
+<label>Hasło</label>
+<div style="position:relative"><input id="l-pass" type="password" autocomplete="current-password" required style="padding-right:48px"><button type="button" id="l-eye" aria-label="Pokaż hasło" style="position:absolute;right:4px;top:50%;transform:translateY(-50%);width:auto;margin:0;padding:8px;background:transparent;color:var(--mut)"></button></div>
 <button id="l-btn" type="submit">Zaloguj</button>
 </form>
 <div id="lm" class="hide"><p id="lmsg" style="text-align:center"></p><button id="l-out" type="button" class="sec" style="display:block;margin:8px auto 0">Wyloguj</button></div>
@@ -139,7 +140,9 @@ input[type=color]{padding:2px;height:44px}
 <div class="card"><div id="h-sum"></div>
 <div class="row" style="margin-top:12px"><select id="h-m"><option value="">Wszystkie miesiące</option><option value="1">Styczeń</option><option value="2">Luty</option><option value="3">Marzec</option><option value="4">Kwiecień</option><option value="5">Maj</option><option value="6">Czerwiec</option><option value="7">Lipiec</option><option value="8">Sierpień</option><option value="9">Wrzesień</option><option value="10">Październik</option><option value="11">Listopad</option><option value="12">Grudzień</option></select><select id="h-y"><option value="">Wszystkie lata</option></select></div>
 <button id="h-show">Pokaż dane z miesiąca i roku</button>
-<button id="h-all" class="sec" style="color:var(--tx);width:100%;margin-top:8px;padding:12px">Pokaż wszystko</button></div>
+<button id="h-all" class="sec" style="color:var(--tx);width:100%;margin-top:8px;padding:12px">Pokaż wszystko</button>
+<div class="row" style="margin-top:8px"><button id="h-txt" class="sec" style="color:var(--tx);width:100%;margin:0;padding:12px">Eksportuj (.txt)</button><button id="h-csv" class="sec" style="color:var(--tx);width:100%;margin:0;padding:12px">Eksportuj (CSV)</button></div>
+<button id="h-share" class="sec hide" style="color:var(--ac);width:100%;margin-top:8px;padding:12px">Udostępnij (np. mailem)</button></div>
 <div id="h-list"></div>
 </section>
 
@@ -529,8 +532,8 @@ function ask(msg,yes,lbl,no){
 }
 function toast(m){
  var t=document.createElement("div");t.textContent=m;
- t.style.cssText="position:fixed;left:16px;right:16px;bottom:calc(76px + env(safe-area-inset-bottom,0px));max-width:480px;margin:0 auto;background:var(--tx);color:var(--bg);padding:12px 14px;border-radius:10px;text-align:center;z-index:98";
- document.body.appendChild(t);setTimeout(function(){t.remove()},2800);
+ t.style.cssText="position:fixed;left:16px;right:16px;top:50%;transform:translateY(-50%);max-width:420px;margin:0 auto;background:var(--tx);color:var(--bg);padding:16px 18px;border-radius:12px;text-align:center;font-size:16px;font-weight:600;box-shadow:0 8px 30px rgba(0,0,0,.35);z-index:300;pointer-events:none";
+ document.body.appendChild(t);setTimeout(function(){t.remove()},3800);
 }
 window.alert=toast;
 var rb={m:false,f:false};
@@ -672,6 +675,60 @@ function startAuth(){
   else{user=null;stopSync();S=emptyS();refreshAll(true);showLogin()}
  });
 }
+
+var EYE_ON='<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8S1 12 1 12z"/><circle cx="12" cy="12" r="3"/></svg>';
+var EYE_OFF='<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8S1 12 1 12z"/><circle cx="12" cy="12" r="3"/><line x1="3" y1="3" x2="21" y2="21"/></svg>';
+$("l-eye").innerHTML=EYE_ON;
+$("l-eye").addEventListener("click",function(){
+ var i=$("l-pass"),show=i.type==="password";
+ i.type=show?"text":"password";
+ $("l-eye").innerHTML=show?EYE_OFF:EYE_ON;
+ $("l-eye").setAttribute("aria-label",show?"Ukryj hasło":"Pokaż hasło");
+});
+function histPer(){return S.history.filter(function(h){if(!hF)return true;var d=new Date(h.date);return (!hF.y||d.getFullYear()===hF.y)&&(!hF.m||d.getMonth()+1===hF.m)})}
+function hCost(h){var c=h.cost||0,sub=h.sub!=null?h.sub:c/(1+S.settings.markup/100);return {sub:sub,earn:c-sub}}
+function csvCell(v){v=String(v==null?"":v);return /[";\r\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v}
+function nz(n,d){return (Math.round((n||0)*Math.pow(10,d))/Math.pow(10,d)).toFixed(d).replace(".",",")}
+function buildExport(kind){
+ var per=histPer().slice().sort(function(a,b){var x=a.date||"",y=b.date||"";return x<y?-1:x>y?1:0});
+ var MN=["styczeń","luty","marzec","kwiecień","maj","czerwiec","lipiec","sierpień","wrzesień","październik","listopad","grudzień"];
+ var plbl=!hF?"wszystkie wydruki":((hF.m?MN[hF.m-1]+" ":"")+(hF.y||"")).trim();
+ var fn="historia-wydrukow"+(hF?("-"+(hF.y||"")+(hF.m?"-"+(hF.m<10?"0":"")+hF.m:"")):"-wszystko");
+ var tot=0,tw=0,earn=0;
+ per.forEach(function(h){tot+=h.cost||0;tw+=h.w||0;earn+=hCost(h).earn});
+ function dt(h){return h.date?new Date(h.date).toLocaleDateString("pl-PL"):""}
+ function tm(h){var hh=Math.floor(h.hrs||0),mm=Math.round(((h.hrs||0)-hh)*60);return hh+" h "+mm+" min"}
+ if(kind==="csv"){
+  var R=[["Data","Nazwa","Zamawiający","Źródło","Filament","Waga (g)","Czas druku (h)","Cena (zł)","Koszt własny (zł)","Zarobek (zł)","Link"]];
+  per.forEach(function(h){var c=hCost(h);R.push([dt(h),h.name||"",h.nick||"",h.source||"",h.fname||"",nz(h.w,1),nz(h.hrs,2),nz(h.cost,2),nz(c.sub,2),nz(c.earn,2),h.link||""])});
+  return {name:fn+".csv",mime:"text/csv",text:"﻿"+R.map(function(r){return r.map(csvCell).join(";")}).join("\r\n")+"\r\n",count:per.length};
+ }
+ var L=["HISTORIA WYDRUKÓW — "+plbl,"Wygenerowano: "+new Date().toLocaleDateString("pl-PL"),"","Liczba wydruków: "+per.length,"Zużyty filament: "+g(tw),"Suma wycen: "+zl(tot),"Zarobek: "+zl(earn),"","----------------------------------------",""];
+ per.forEach(function(h,i){
+  L.push((i+1)+". "+dt(h)+" — "+(h.name||""));
+  L.push("   Zamawiający: "+(h.nick||"-")+(h.source?" ("+h.source+")":""));
+  L.push("   Filament: "+(h.fname||"-")+", "+g(h.w||0));
+  L.push("   Czas druku: "+tm(h));
+  L.push("   Cena: "+zl(h.cost||0));
+  if(h.link)L.push("   Link: "+h.link);
+  L.push("");
+ });
+ return {name:fn+".txt",mime:"text/plain",text:L.join("\r\n"),count:per.length};
+}
+function saveFile(b){
+ var blob=new Blob([b.text],{type:b.mime+";charset=utf-8"});
+ var a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=b.name;document.body.appendChild(a);a.click();
+ setTimeout(function(){URL.revokeObjectURL(a.href);a.remove()},1500);
+ alert("Zapisano plik: "+b.name);
+}
+function doExport(kind){var b=buildExport(kind);if(!b.count){alert("Brak wydruków w wybranym okresie.");return}saveFile(b)}
+$("h-txt").addEventListener("click",function(){doExport("txt")});
+$("h-csv").addEventListener("click",function(){doExport("csv")});
+try{if(navigator.canShare&&navigator.canShare({files:[new File(["x"],"a.txt",{type:"text/plain"})]}))$("h-share").classList.remove("hide")}catch(e){}
+$("h-share").addEventListener("click",function(){
+ var b=buildExport("txt");if(!b.count){alert("Brak wydruków w wybranym okresie.");return}
+ try{navigator.share({files:[new File([b.text],b.name,{type:b.mime})],title:b.name}).catch(function(){})}catch(e){saveFile(b)}
+});
 var IDLE=3;try{var iv=localStorage.getItem("kalk3d_idle");if(iv!==null&&!isNaN(parseFloat(iv)))IDLE=parseFloat(iv)}catch(e){}
 if(IDLE!==0&&IDLE!==3&&IDLE!==15)IDLE=3;
 var lastAct=Date.now(),lastSaved=0;
